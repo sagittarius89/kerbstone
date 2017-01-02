@@ -9,16 +9,24 @@
 // @grant        none
 // ==/UserScript==
 
-(function() {
-    // variables
-    var collapsedList;
+(function () {
+    console.log('Kerbstone starting...');
+
+
+    // constants
+    var STORAGE_KEY_COLLAPSED_LIST = 'wykop.kerbstone.collapsedList';
 
 
     // routines
     var collapse = collapse;
     var expand = expand;
-    var toggleCollapse = toggleCollapse;
+    var collapseOrExpand = collapseOrExpand;
+    var toggleCollapseExpand = toggleCollapseExpand;
     var init = init;
+
+
+    // variables
+    var collapsedList;
 
 
     // initialization
@@ -27,10 +35,19 @@
 
     // implementation
     function init() {
-        if (localStorage.collapsedList === undefined) {
-            localStorage.setItem('collapsedList', JSON.stringify([]));
+        try {
+            console.log('localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST)', localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST));
+            collapsedList = JSON.parse(localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST));
+
+            if (!collapsedList) {
+                collapsedList = [];
+                localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
+            }
         }
-        collapsedList = JSON.parse(localStorage.getItem('collapsedList'));
+        catch(ex) {
+            collapsedList = [];
+            localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
+        }
 
         $('#itemsStream')
             .children()
@@ -38,8 +55,6 @@
                 var vC = $(element).find('p.vC').first();
                 var html = $(vC).html();
                 var id = $(element).find('div.wblock').attr('data-id');
-
-                var collapsedList = JSON.parse(localStorage.getItem('collapsedList'));
 
                 var idHandle = id + '_handle';
                 if (collapsedList.indexOf(id) === -1) {
@@ -55,45 +70,45 @@
                 $(vC)
                     .find('#' + idHandle)
                     .click(function() {
-                        toggleCollapse(id);
+                        toggleCollapseExpand(id);
                     });
 
             });
     }
 
     function collapse(id) {
-        var parent = $('div[data-id=' + id + ' ]').parent();
-        parent.find('div.text').first().css('display', 'none');
-        parent.find('div.elements').first().css('display', 'none');
-        parent.find('img.avatar').first().css('display', 'none');
-        parent.children('ul.sub').css('display', 'none');
-        parent.find('#' + id + '_handle').text('[ + ]');
+        collapseOrExpand(id, true);
     }
 
     function expand(id) {
-        var parent = $('div[data-id=' + id + ' ]').parent();
-        parent.find('div.text').first().css('display', 'block');
-        parent.find('div.elements').first().css('display', 'block');
-        parent.find('img.avatar').first().css('display', 'block');
-        parent.children('ul.sub').css('display', 'block');
-        parent.find('#' + id + '_handle').text('[ - ]');
+        collapseOrExpand(id, false);
     }
 
-    function toggleCollapse(id) {
+    function collapseOrExpand(id, collapse) {
+        var displayValue = collapse ? 'none' : 'block';
+        var textValue = collapse ? '+' : '-';
+
+        var parent = $('div[data-id=' + id + ' ]').parent();
+        parent.find('div.text').first().css('display', displayValue);
+        parent.find('div.elements').first().css('display', displayValue);
+        parent.find('img.avatar').first().css('display', displayValue);
+        parent.children('ul.sub').css('display', displayValue);
+        parent.find('#' + id + '_handle').text('[ ' + textValue + ' ]');
+    }
+
+    function toggleCollapseExpand(id) {
         var idx = collapsedList.indexOf(id);
 
         if (idx > -1) {
             collapsedList.splice(idx, 1);
 
-            localStorage.setItem('collapsedList', JSON.stringify(collapsedList));
-
             expand(id);
         } else {
             collapsedList.push(id);
 
-            localStorage.setItem('collapsedList', JSON.stringify(collapsedList));
-
             collapse(id);
         }
-    };
+
+        localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
+    }
 })();

@@ -1,89 +1,102 @@
 // ==UserScript==
 // @name         Krawężnik
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.2
 // @description  dodaje funkcje krawężnika do mirko
-// @author       @ZasilaczKomputerowy
+// @author       @ZasilaczKomputerowy, @shar
 // @match        http://www.wykop.pl/mikroblog/*
 // @match        http://www.wykop.pl/link/*
 // @grant        none
 // ==/UserScript==
 
 (function() {
-    // dodaje przycisk do watkow
-    $('#itemsStream').children().each(function(elem) {
-        var vC = $(this).find('p.vC').first();
-        var html = $(vC).html();
-        var id = $(this).find('div.wblock').attr('data-id');
+	// constants
+	var STORAGE_KEY_COLLAPSED_LIST = 'listaZwinietych';
+	
+	// routines
+    var collapse = collapse;
+    var expand = expand;
+    var collapseOrExpand = collapseOrExpand;
+    var toggleCollapseExpand = toggleCollapseExpand;
+    var init = init;
+	
+    // variables
+    var collapsedList;
+	
+	// initialization
+    init();
+	
+    // implementation
+    function init() {
+        try {
+            collapsedList = JSON.parse(localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST));
 
-        if(localStorage.listaZwinietych === undefined)
-        {
-            localStorage.setItem("listaZwinietych", JSON.stringify([]));
+            if (!collapsedList) {
+                collapsedList = [];
+                localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
+            }
+        } catch (ex) {
+            collapsedList = [];
+            localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
         }
 
-        var zwin = function(id)
-        {
-            var parent = $('div[data-id=' + id +' ]').first().parent();
-            $(parent).find('div.text').first().css('display', 'none');
-            $(parent).find('div.elements').first().css('display', 'none');
-            $(parent).find('img.avatar').first().css('display', 'none');
-            $(parent).children('ul.sub').first().css('display', 'none');
-            $(parent).find('#' + id + '_handle').first().text('[ + ]');
-        };
+        $('#itemsStream')
+            .children()
+            .each(function(index, element) {
+                var vC = $(element).find('p.vC').first();
+                var id = $(element).find('div.wblock').attr('data-id');
+                var collapsedElement = collapsedList.indexOf(id) !== -1;
 
-        var rozwin = function(id)
-        {
-            var parent = $('div[data-id=' + id +' ]').first().parent();
-            $(parent).find('div.text').first().css('display', 'block');
-            $(parent).find('div.elements').first().css('display', 'block');
-            $(parent).find('img.avatar').first().css('display', 'block');
-            $(parent).children('ul.sub').first().css('display', 'block');
-            $(parent).find('#' + id + '_handle').first().text('[ - ]');
-        };
+                var expandCollapseButton = $("<span>",
+                {
+                    id: id + '_handle',
+                    text: '[ ' + (collapsedElement ? '+' : '-') + ' ]',
+                    click: function() {
+                        toggleCollapseExpand(id);
+                    }
+                });
 
-        var listaZwinietych = JSON.parse(localStorage.getItem("listaZwinietych"));
+                vC.prepend(expandCollapseButton);
 
-        var idHandle = id + "_handle";
-        if(listaZwinietych.indexOf(id) == -1)
-        {
-            html = '<span id="' + idHandle + '">[ - ]</span>' + html;
-            $(vC).html(html);
+                if (collapsedElement) {
+                    collapse(id);
+                }
+            });
+    }
+
+    function collapse(id) {
+        collapseOrExpand(id, true);
+    }
+
+    function expand(id) {
+        collapseOrExpand(id, false);
+    }
+
+    function collapseOrExpand(id, collapse) {
+        var displayValue = collapse ? 'none' : 'block';
+        var textValue = collapse ? '[ + ]' : '[ - ]';
+
+        var parent = $('div[data-id=' + id + ' ]').parent();
+        parent.find('div.text').first().css('display', displayValue);
+        parent.find('div.elements').first().css('display', displayValue);
+        parent.find('img.avatar').first().css('display', displayValue);
+        parent.children('ul.sub').css('display', displayValue);
+        parent.find('#' + id + '_handle').text(textValue);
+
+        $("img.lazy").lazyload(); // refresh lazyload positnions of all elements
+    }
+
+    function toggleCollapseExpand(id) {
+        var idx = collapsedList.indexOf(id);
+
+        if (idx > -1) {
+            collapsedList.splice(idx, 1);
+            expand(id);
+        } else {
+            collapsedList.push(id);
+            collapse(id);
         }
-        else
-        {
-            html = '<span id="' + id + '_handle">[ + ]</span>' + html;
-            $(vC).html(html);
 
-            zwin(id);
-        }
-
-        $(vC).find('#' + idHandle).click(function() {
-            if(localStorage.listaZwinietych === undefined)
-            {
-                localStorage.setItem("listaZwinietych", JSON.stringify([]));
-            }
-
-            var listaZwinietych = JSON.parse(localStorage.getItem("listaZwinietych"));
-            var idx = listaZwinietych.indexOf(id);
-
-            if(idx>-1)
-            {
-                listaZwinietych.splice(idx,1);
-
-                localStorage.setItem("listaZwinietych", JSON.stringify(listaZwinietych));
-
-                rozwin(id);
-            }
-            else
-            {
-                listaZwinietych.push(id);
-
-                localStorage.setItem("listaZwinietych", JSON.stringify(listaZwinietych));
-
-                zwin(id);
-            }
-        });
-
-        $('img[data-original]').each(function() { $(this).attr('src', $(this).attr('data-original')); });
-    });
+        localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
+    }
 })();

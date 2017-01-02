@@ -9,7 +9,7 @@
 // @grant        none
 // ==/UserScript==
 
-(function () {
+(function() {
     console.log('Kerbstone starting...');
 
 
@@ -36,15 +36,13 @@
     // implementation
     function init() {
         try {
-            console.log('localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST)', localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST));
             collapsedList = JSON.parse(localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST));
 
             if (!collapsedList) {
                 collapsedList = [];
                 localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
             }
-        }
-        catch(ex) {
+        } catch (ex) {
             collapsedList = [];
             localStorage.setItem(STORAGE_KEY_COLLAPSED_LIST, JSON.stringify(collapsedList));
         }
@@ -53,26 +51,23 @@
             .children()
             .each(function(index, element) {
                 var vC = $(element).find('p.vC').first();
-                var html = $(vC).html();
                 var id = $(element).find('div.wblock').attr('data-id');
+                var collapsedElement = collapsedList.indexOf(id) !== -1;
 
-                var idHandle = id + '_handle';
-                if (collapsedList.indexOf(id) === -1) {
-                    html = '<span id="' + idHandle + '">[ - ]</span>' + html;
-                    $(vC).html(html);
-                } else {
-                    html = '<span id="' + id + '_handle">[ + ]</span>' + html;
-                    $(vC).html(html);
+                var expandCollapseButton = $("<span>",
+                {
+                    id: id + '_handle',
+                    text: '[ ' + (collapsedElement ? '+' : '-') + ' ]',
+                    click: function() {
+                        toggleCollapseExpand(id);
+                    }
+                });
 
+                vC.prepend(expandCollapseButton);
+
+                if (collapsedElement) {
                     collapse(id);
                 }
-
-                $(vC)
-                    .find('#' + idHandle)
-                    .click(function() {
-                        toggleCollapseExpand(id);
-                    });
-
             });
     }
 
@@ -101,11 +96,9 @@
 
         if (idx > -1) {
             collapsedList.splice(idx, 1);
-
             expand(id);
         } else {
             collapsedList.push(id);
-
             collapse(id);
         }
 

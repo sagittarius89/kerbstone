@@ -89,6 +89,8 @@
         parent.find('img.avatar').first().css('display', displayValue);
         parent.children('ul.sub').css('display', displayValue);
         parent.find('#' + id + '_handle').text('[ ' + textValue + ' ]');
+
+        $("img.lazy").lazyload(); // refresh lazyload positnions of all elements
     }
 
     function toggleCollapseExpand(id) {

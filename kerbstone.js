@@ -6,28 +6,31 @@
 // @author       @ZasilaczKomputerowy, @shar
 // @match        http://www.wykop.pl/mikroblog/*
 // @match        http://www.wykop.pl/link/*
-// @grant        none
+// @grant        GM_addStyle
 // ==/UserScript==
 
 (function() {
-	// constants
-	var STORAGE_KEY_COLLAPSED_LIST = 'listaZwinietych';
-	
-	// routines
+    // constants
+    var STORAGE_KEY_COLLAPSED_LIST = 'listaZwinietych';
+
+    // routines
     var collapse = collapse;
     var expand = expand;
     var collapseOrExpand = collapseOrExpand;
     var toggleCollapseExpand = toggleCollapseExpand;
     var init = init;
-	
+    var addStyle = addStyle;
+
     // variables
     var collapsedList;
-	
-	// initialization
+
+    // initialization
     init();
-	
+
     // implementation
     function init() {
+        addStyle();
+
         try {
             collapsedList = JSON.parse(localStorage.getItem(STORAGE_KEY_COLLAPSED_LIST));
 
@@ -50,18 +53,29 @@
                 var expandCollapseButton = $("<span>",
                 {
                     id: id + '_handle',
+                    class: 'kerbstone-button',
                     text: '[ ' + (collapsedElement ? '+' : '-') + ' ]',
                     click: function() {
                         toggleCollapseExpand(id);
                     }
                 });
 
-                vC.prepend(expandCollapseButton);
+                //vC.prepend(expandCollapseButton);
+                expandCollapseButton.insertBefore(vC);
 
                 if (collapsedElement) {
                     collapse(id);
                 }
             });
+    }
+
+    function addStyle() {
+        // TODO: need to find better way to position button
+        GM_addStyle(
+            '.kerbstone-button { ' +
+            'position: absolute; ' +
+            'right: 100px; ' +
+            '}');
     }
 
     function collapse(id) {
